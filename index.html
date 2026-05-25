@@ -181,22 +181,37 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 
 @keyframes pg { from{opacity:1} to{opacity:0.5} }
 
-/* ── Mobile landscape: bigger piano keys, more padding ── */
-@media only screen and (max-width: 900px) and (orientation: landscape) and (pointer: coarse) {
+/* ── Mobile landscape: force piano to be tall enough ── */
+@media only screen and (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
   #piano-area {
-    padding: 6px 0 8px;
-    flex-shrink: 0;
+    padding: 4px 0 6px !important;
+    flex-shrink: 0 !important;
+    min-height: 85px !important;
   }
-  #piano-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  #piano-inner {
+    height: 70px !important;
+  }
+  .wk {
+    height: 70px !important;
+  }
+  .bk {
+    height: 43px !important;
   }
   #hud {
-    padding: 5px 10px;
-    font-size: 10px;
+    padding: 4px 10px !important;
+    font-size: 10px !important;
+    min-height: 0 !important;
   }
   #staff-panel {
-    min-height: 0;
+    flex: 1 !important;
+    overflow: hidden !important;
+  }
+  #staff-svg {
+    max-height: 160px !important;
+  }
+  #piano-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 }
 </style>
@@ -216,7 +231,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v1.6 &nbsp;mobile: bigger keys, fix clipping on landscape</span><br>
+    <span style="color:#c8a96e;">v1.7 &nbsp;mobile: pure CSS key sizing, fix clipping</span><br>
     <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
@@ -341,12 +356,8 @@ function pickNextNote(){
 // ── Piano ──────────────────────────────────────────────
 function buildPiano(){
   const totalW=window.innerWidth;
-  const isMobileLandscape = window.innerWidth > window.innerHeight && window.innerWidth < 900 && ('ontouchstart' in window);
   const ww=Math.max(11,Math.floor((totalW-4)/WHITE_MIDI.length)-1);
-  // On mobile landscape, make keys taller so they're easier to tap
-  const wh = isMobileLandscape
-    ? Math.min(130, Math.max(90, Math.floor(window.innerHeight * 0.30)))
-    : Math.min(110, Math.max(65, Math.floor(window.innerHeight * 0.17)));
+  const wh=Math.min(77,Math.max(46,Math.floor(window.innerHeight*0.119)));
   const bw=Math.max(7,Math.floor(ww*0.58));
   const bh=Math.floor(wh*0.62);
 
@@ -447,20 +458,17 @@ function drawStaff(note){
   const svgEl=document.getElementById('staff-svg');
   const panel=document.getElementById('staff-panel');
   const W=Math.min(panel.clientWidth-40,560);
-  const isMobileLandscape = window.innerWidth > window.innerHeight && window.innerWidth < 900 && ('ontouchstart' in window);
-  // Compact gap on mobile so staff takes less vertical space
-  const gap = isMobileLandscape ? 8 : 10;
-
+  const gap=10;
   const showBoth = currentMode==='both';
 
   let H, tTop, bTop;
   if(showBoth){
-    tTop = isMobileLandscape ? 28 : 40;
-    bTop = tTop + 4*gap + (isMobileLandscape ? 20 : 28);
-    H = bTop + 4*gap + (isMobileLandscape ? 24 : 35);
+    tTop = 40;
+    bTop = tTop + 4*gap + 28;
+    H = bTop + 4*gap + 35;
   } else {
-    tTop = isMobileLandscape ? 28 : 40;
-    H = tTop + 4*gap + (isMobileLandscape ? 24 : 35);
+    tTop = 40;
+    H = tTop + 4*gap + 35;
   }
 
   svgEl.setAttribute('width',W);
