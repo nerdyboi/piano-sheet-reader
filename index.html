@@ -180,6 +180,25 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 .bk.flash-bad { background: #eb5757 !important; }
 
 @keyframes pg { from{opacity:1} to{opacity:0.5} }
+
+/* ── Mobile landscape: bigger piano keys, more padding ── */
+@media only screen and (max-width: 900px) and (orientation: landscape) and (pointer: coarse) {
+  #piano-area {
+    padding: 6px 0 8px;
+    flex-shrink: 0;
+  }
+  #piano-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #hud {
+    padding: 5px 10px;
+    font-size: 10px;
+  }
+  #staff-panel {
+    min-height: 0;
+  }
+}
 </style>
 </head>
 <body>
@@ -197,7 +216,8 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
+    <span style="color:#c8a96e;">v1.6 &nbsp;mobile: bigger keys, fix clipping on landscape</span><br>
+    <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
     <span style="color:#333;">v1.2 &nbsp;treble/bass/both modes + key zones</span><br>
@@ -321,8 +341,12 @@ function pickNextNote(){
 // ── Piano ──────────────────────────────────────────────
 function buildPiano(){
   const totalW=window.innerWidth;
+  const isMobileLandscape = window.innerWidth > window.innerHeight && window.innerWidth < 900 && ('ontouchstart' in window);
   const ww=Math.max(11,Math.floor((totalW-4)/WHITE_MIDI.length)-1);
-  const wh=Math.min(110,Math.max(65,Math.floor(window.innerHeight*0.17)));
+  // On mobile landscape, make keys taller so they're easier to tap
+  const wh = isMobileLandscape
+    ? Math.min(130, Math.max(90, Math.floor(window.innerHeight * 0.30)))
+    : Math.min(110, Math.max(65, Math.floor(window.innerHeight * 0.17)));
   const bw=Math.max(7,Math.floor(ww*0.58));
   const bh=Math.floor(wh*0.62);
 
@@ -423,23 +447,20 @@ function drawStaff(note){
   const svgEl=document.getElementById('staff-svg');
   const panel=document.getElementById('staff-panel');
   const W=Math.min(panel.clientWidth-40,560);
-  const gap=10; // px between staff lines
+  const isMobileLandscape = window.innerWidth > window.innerHeight && window.innerWidth < 900 && ('ontouchstart' in window);
+  // Compact gap on mobile so staff takes less vertical space
+  const gap = isMobileLandscape ? 8 : 10;
 
   const showBoth = currentMode==='both';
 
   let H, tTop, bTop;
   if(showBoth){
-    // treble top line needs headroom for pos>8 ledger lines
-    // max treble pos = 14 (C6): 3 ledger lines above = 3*gap above top line
-    tTop = 40;
-    // treble spans from tTop to tTop+4*gap (bottom line)
-    // bass starts below with some spacing; bass bottom line
-    // max bass below = pos -6: 3 ledger lines below
-    bTop = tTop + 4*gap + 28; // gap between staves
-    H = bTop + 4*gap + 35; // 35px below bass bottom for ledger lines
+    tTop = isMobileLandscape ? 28 : 40;
+    bTop = tTop + 4*gap + (isMobileLandscape ? 20 : 28);
+    H = bTop + 4*gap + (isMobileLandscape ? 24 : 35);
   } else {
-    tTop = 40;
-    H = tTop + 4*gap + 35;
+    tTop = isMobileLandscape ? 28 : 40;
+    H = tTop + 4*gap + (isMobileLandscape ? 24 : 35);
   }
 
   svgEl.setAttribute('width',W);
