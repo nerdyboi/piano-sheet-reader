@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piano Sheet Reader</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1a1a1c; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+#app {
+  font-family: 'Courier New', monospace;
+  background: #0e0e10;
+  color: #f0ede6;
+  width: 100%;
+  max-width: 700px;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  user-select: none;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+#start-screen {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 22px; padding: 2rem;
+}
+#start-screen h1 { font-size: 28px; font-style: italic; color: #f0ede6; }
+#start-screen p { font-size: 12px; color: #777; text-align: center; max-width: 300px; line-height: 1.8; }
+.speed-control { display: flex; align-items: center; gap: 10px; font-size: 11px; color: #aaa; }
+.speed-control input[type=range] { width: 130px; accent-color: #c8a96e; }
+#start-btn {
+  background: #c8a96e; color: #0e0e10; border: none; border-radius: 6px;
+  padding: 11px 36px; font-family: inherit; font-size: 13px; font-weight: 500;
+  cursor: pointer; letter-spacing: 0.05em; transition: opacity 0.15s;
+}
+#start-btn:hover { opacity: 0.82; }
+#menu-btn {
+  background: transparent; color: #888; border: 0.5px solid #333;
+  border-radius: 6px; padding: 7px 18px; font-family: inherit;
+  font-size: 11px; cursor: pointer; transition: color 0.15s, border-color 0.15s;
+}
+#menu-btn:hover { color: #f0ede6; border-color: #666; }
+#game-screen { display: none; flex-direction: column; flex: 1; }
+#hud {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; background: #161618;
+  border-bottom: 0.5px solid #2a2a2e; font-size: 11px; gap: 10px;
+}
+#hud .stat { color: #777; white-space: nowrap; }
+#hud .stat span { color: #f0ede6; font-weight: 500; margin-left: 5px; }
+#timer-bar-wrap { flex: 1; height: 3px; background: #2a2a2e; border-radius: 2px; overflow: hidden; }
+#timer-bar { height: 100%; background: #c8a96e; border-radius: 2px; width: 100%; }
+#staff-area {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 6px 0 4px; background: #0e0e10;
+  position: relative; min-height: 210px;
+}
+#feedback {
+  position: absolute; top: 8px; right: 14px;
+  font-size: 13px; font-weight: 500; opacity: 0; transition: opacity 0.2s;
+}
+#feedback.correct { color: #6fcf97; }
+#feedback.wrong { color: #eb5757; }
+#piano-area { padding: 8px 4px 10px; background: #161618; border-top: 0.5px solid #2a2a2e; }
+#piano-label { font-size: 9px; color: #444; text-align: center; margin-bottom: 6px; letter-spacing: 0.1em; }
+#piano-scroll { overflow-x: auto; overflow-y: hidden; width: 100%; padding-bottom: 4px; }
+#piano-scroll::-webkit-scrollbar { height: 3px; }
+#piano-scroll::-webkit-scrollbar-track { background: #1a1a1a; }
+#piano-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+#piano-inner { position: relative; height: 82px; }
+.wk {
+  height: 82px; background: #f0ece3; border: 0.5px solid #999;
+  border-radius: 0 0 4px 4px; cursor: pointer; position: absolute;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 3px; font-size: 7px; color: #aaa;
+  font-family: inherit; transition: background 0.07s;
+}
+.wk:hover { background: #e0dbd0; }
+.wk.lh { background: #dedad0; }
+.wk.rh { background: #dedad0; }
+.wk.active { background: #c8a96e !important; }
+.wk.flash-good { background: #a8d8a8 !important; }
+.wk.flash-bad { background: #f4a0a0 !important; }
+.bk {
+  background: #1a1a1a; border: 0.5px solid #000;
+  border-radius: 0 0 3px 3px; cursor: pointer; position: absolute;
+  top: 0; z-index: 2; transition: background 0.07s;
+}
+.bk:hover { background: #2e2e2e; }
+.bk.lh { background: #252525; }
+.bk.rh { background: #252525; }
+.bk.active { background: #c8a96e !important; }
+.bk.flash-good { background: #6fcf97 !important; }
+.bk.flash-bad { background: #eb5757 !important; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="start-screen">
+    <h1>Piano Sheet Reader</h1>
+    <p>A note appears on the staff. Press the matching piano key before time runs out.</p>
+    <div class="speed-control">
+      <span>time per note:</span>
+      <input type="range" id="speed-slider" min="2" max="10" value="5" step="1">
+      <span id="speed-label">5s</span>
+    </div>
+    <button id="start-btn">START</button>
+  </div>
+  <div id="game-screen">
+    <div id="hud">
+      <div class="stat">score<span id="score-val">0</span></div>
+      <div id="timer-bar-wrap"><div id="timer-bar"></div></div>
+      <div class="stat">streak<span id="streak-val">0</span></div>
+      <button id="menu-btn">menu</button>
+    </div>
+    <div id="staff-area">
+      <div id="feedback"></div>
+      <svg id="staff-svg" width="420" height="195" viewBox="0 0 420 195" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div id="piano-area">
+      <div id="piano-label">← SCROLL · CLICK THE CORRECT KEY · SCROLL →</div>
+      <div id="piano-scroll"><div id="piano-inner"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+function midiName(m) { return NOTE_NAMES[m % 12] + (Math.floor(m/12)-1); }
+function isWhite(m) { return [0,2,4,5,7,9,11].includes(m % 12); }
+
+const ALL_MIDI = [];
+for (let m = 21; m <= 108; m++) ALL_MIDI.push(m);
+const WHITE_MIDI = ALL_MIDI.filter(m => isWhite(m));
+const BLACK_MIDI = ALL_MIDI.filter(m => !isWhite(m));
+
+const WW = 18, WH = 82, BW = 11, BH = 50;
+const LH_LO = 48, LH_HI = 59;
+const RH_LO = 60, RH_HI = 71;
+
+const SEMI_TO_DIAT = [0,null,1,null,2,3,null,4,null,5,null,6];
+function diatPos(midi) {
+  const oct = Math.floor(midi/12)-1;
+  const d = SEMI_TO_DIAT[midi%12];
+  return oct*7 + (d === null ? 0 : d);
+}
+function staffPos(midi, clef) {
+  const ref = clef === 'treble' ? diatPos(64) : diatPos(43);
+  return diatPos(midi) - ref;
+}
+
+const QUIZ_NOTES = [];
+for (let m = 60; m <= 79; m++) if (isWhite(m)) QUIZ_NOTES.push({midi:m, clef:'treble', pos:staffPos(m,'treble')});
+for (let m = 36; m <= 60; m++) if (isWhite(m)) QUIZ_NOTES.push({midi:m, clef:'bass', pos:staffPos(m,'bass')});
+
+let score=0, streak=0, currentNote=null, timerId=null, noteDuration=5000;
+const timerBar = document.getElementById('timer-bar');
+
+function buildPiano() {
+  const inner = document.getElementById('piano-inner');
+  inner.innerHTML = '';
+  inner.style.width = (WHITE_MIDI.length * (WW+1)) + 'px';
+  const whiteX = {};
+  WHITE_MIDI.forEach((m,i) => {
+    const x = i*(WW+1);
+    whiteX[m] = x;
+    const k = document.createElement('div');
+    k.className = 'wk';
+    k.dataset.midi = m;
+    k.style.left = x+'px';
+    k.style.width = WW+'px';
+    if (m>=LH_LO && m<=LH_HI) k.classList.add('lh');
+    if (m>=RH_LO && m<=RH_HI) k.classList.add('rh');
+    const nm = midiName(m);
+    if (nm.startsWith('C')) k.textContent = nm;
+    k.addEventListener('mousedown', e => { e.preventDefault(); handleKey(m); });
+    inner.appendChild(k);
+  });
+  BLACK_MIDI.forEach(m => {
+    const lx = whiteX[m-1];
+    if (lx === undefined) return;
+    const k = document.createElement('div');
+    k.className = 'bk';
+    k.dataset.midi = m;
+    k.style.left = (lx + WW + 1 - Math.floor(BW/2) - 1)+'px';
+    k.style.width = BW+'px';
+    k.style.height = BH+'px';
+    if (m>=LH_LO && m<=LH_HI) k.classList.add('lh');
+    if (m>=RH_LO && m<=RH_HI) k.classList.add('rh');
+    k.addEventListener('mousedown', e => { e.preventDefault(); handleKey(m); });
+    inner.appendChild(k);
+  });
+}
+
+function scrollToMidi(midi) {
+  const scr = document.getElementById('piano-scroll');
+  const target = isWhite(midi) ? midi : midi+1;
+  const idx = WHITE_MIDI.indexOf(target);
+  const x = idx*(WW+1) - scr.clientWidth/2 + WW*3;
+  scr.scrollTo({left: Math.max(0,x), behavior:'smooth'});
+}
+
+function drawStaff(note) {
+  const svg = document.getElementById('staff-svg');
+  svg.innerHTML = '';
+  const W=420, H=195, tTop=22, bTop=112, gap=9;
+  function lineY(top,i) { return top+(4-i)*gap; }
+  function drawLines(top) {
+    for (let i=0;i<5;i++) {
+      const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+      l.setAttribute('x1','46'); l.setAttribute('x2',String(W-16));
+      l.setAttribute('y1',String(lineY(top,i))); l.setAttribute('y2',String(lineY(top,i)));
+      l.setAttribute('stroke','#4a4a4a'); l.setAttribute('stroke-width','0.9');
+      svg.appendChild(l);
+    }
+  }
+  drawLines(tTop); drawLines(bTop);
+  const bar = document.createElementNS('http://www.w3.org/2000/svg','line');
+  bar.setAttribute('x1','46'); bar.setAttribute('x2','46');
+  bar.setAttribute('y1',String(tTop)); bar.setAttribute('y2',String(bTop+4*gap));
+  bar.setAttribute('stroke','#4a4a4a'); bar.setAttribute('stroke-width','1.2');
+  svg.appendChild(bar);
+  function txt(x,y,t,sz,fill) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg','text');
+    el.setAttribute('x',String(x)); el.setAttribute('y',String(y));
+    el.setAttribute('fill',fill||'#888'); el.setAttribute('font-size',String(sz));
+    el.setAttribute('font-family','serif'); el.textContent=t;
+    svg.appendChild(el);
+  }
+  txt(18,tTop+37,'𝄞',40); txt(20,bTop+21,'𝄢',25);
+  const isBass = note.clef==='bass';
+  const sTop = isBass ? bTop : tTop;
+  const hl = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  hl.setAttribute('x','46'); hl.setAttribute('y',String(sTop-2));
+  hl.setAttribute('width',String(W-62)); hl.setAttribute('height',String(4*gap+4));
+  hl.setAttribute('fill',isBass?'#1a1828':'#1a2420');
+  hl.setAttribute('rx','2'); hl.setAttribute('opacity','0.4');
+  svg.insertBefore(hl,svg.firstChild);
+  const botY = lineY(sTop,0);
+  const noteY = botY - note.pos*(gap/2);
+  const noteX = W/2+10;
+  const rx=5, ry=3.5;
+  if (note.pos < 0) {
+    for (let p=-2;p>=note.pos;p-=2) {
+      const ly = botY-p*(gap/2);
+      const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+      l.setAttribute('x1',String(noteX-rx-5)); l.setAttribute('x2',String(noteX+rx+5));
+      l.setAttribute('y1',String(ly)); l.setAttribute('y2',String(ly));
+      l.setAttribute('stroke','#c8a96e'); l.setAttribute('stroke-width','1.2');
+      svg.appendChild(l);
+    }
+  }
+  if (note.pos > 8) {
+    for (let p=10;p<=note.pos;p+=2) {
+      const ly = botY-p*(gap/2);
+      const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+      l.setAttribute('x1',String(noteX-rx-5)); l.setAttribute('x2',String(noteX+rx+5));
+      l.setAttribute('y1',String(ly)); l.setAttribute('y2',String(ly));
+      l.setAttribute('stroke','#c8a96e'); l.setAttribute('stroke-width','1.2');
+      svg.appendChild(l);
+    }
+  }
+  const el = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+  el.setAttribute('cx',String(noteX)); el.setAttribute('cy',String(noteY));
+  el.setAttribute('rx',String(rx)); el.setAttribute('ry',String(ry));
+  el.setAttribute('fill','#c8a96e');
+  el.setAttribute('transform',`rotate(-12,${noteX},${noteY})`);
+  svg.appendChild(el);
+  const up = note.pos < 4;
+  const sx = noteX+(up?rx-1:-(rx-1));
+  const stem = document.createElementNS('http://www.w3.org/2000/svg','line');
+  stem.setAttribute('x1',String(sx)); stem.setAttribute('x2',String(sx));
+  stem.setAttribute('y1',String(noteY)); stem.setAttribute('y2',String(up?noteY-28:noteY+28));
+  stem.setAttribute('stroke','#c8a96e'); stem.setAttribute('stroke-width','1.2');
+  svg.appendChild(stem);
+  txt(noteX+rx+7,noteY+3,midiName(note.midi),9,'#555');
+}
+
+function startTimer() {
+  clearTimeout(timerId);
+  timerBar.style.transition = 'none';
+  timerBar.style.width = '100%';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    timerBar.style.transition = `width ${noteDuration}ms linear`;
+    timerBar.style.width = '0%';
+  }));
+  timerId = setTimeout(() => {
+    showFeedback('time', 'wrong');
+    streak = 0;
+    document.getElementById('streak-val').textContent = streak;
+    setTimeout(nextNote, 500);
+  }, noteDuration);
+}
+
+function nextNote() {
+  currentNote = QUIZ_NOTES[Math.floor(Math.random()*QUIZ_NOTES.length)];
+  drawStaff(currentNote);
+  startTimer();
+  scrollToMidi(currentNote.midi);
+}
+
+function flashKey(midi, cls) {
+  const k = document.querySelector(`[data-midi="${midi}"]`);
+  if (!k) return;
+  k.classList.add(cls);
+  setTimeout(() => k.classList.remove(cls), 350);
+}
+
+function handleKey(midi) {
+  if (!currentNote) return;
+  if (midi === currentNote.midi) {
+    score += 10 + streak*2;
+    streak++;
+    document.getElementById('score-val').textContent = score;
+    document.getElementById('streak-val').textContent = streak;
+    showFeedback('✓ correct', 'correct');
+    flashKey(midi, 'flash-good');
+    clearTimeout(timerId);
+    timerBar.style.transition = 'none';
+    timerBar.style.width = '100%';
+    setTimeout(nextNote, 350);
+  } else {
+    streak = 0;
+    document.getElementById('streak-val').textContent = streak;
+    showFeedback('✗ wrong', 'wrong');
+    flashKey(midi, 'flash-bad');
+  }
+}
+
+function showFeedback(msg, type) {
+  const el = document.getElementById('feedback');
+  el.textContent = msg;
+  el.className = type;
+  el.style.opacity = '1';
+  setTimeout(() => { el.style.opacity = '0'; }, 800);
+}
+
+document.getElementById('speed-slider').addEventListener('input', function() {
+  document.getElementById('speed-label').textContent = this.value+'s';
+  noteDuration = parseInt(this.value)*1000;
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+  buildPiano();
+  nextNote();
+});
+
+document.getElementById('menu-btn').addEventListener('click', () => {
+  clearTimeout(timerId);
+  currentNote = null;
+  score = 0; streak = 0;
+  document.getElementById('score-val').textContent = '0';
+  document.getElementById('streak-val').textContent = '0';
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('start-screen').style.display = 'flex';
+});
+</script>
+</body>
+</html>
