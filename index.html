@@ -181,39 +181,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 
 @keyframes pg { from{opacity:1} to{opacity:0.5} }
 
-/* ── Mobile landscape: force piano to be tall enough ── */
-@media only screen and (max-height: 500px) and (orientation: landscape) and (pointer: coarse) {
-  #piano-area {
-    padding: 4px 0 6px !important;
-    flex-shrink: 0 !important;
-    min-height: 85px !important;
-  }
-  #piano-inner {
-    height: 70px !important;
-  }
-  .wk {
-    height: 70px !important;
-  }
-  .bk {
-    height: 43px !important;
-  }
-  #hud {
-    padding: 4px 10px !important;
-    font-size: 10px !important;
-    min-height: 0 !important;
-  }
-  #staff-panel {
-    flex: 1 !important;
-    overflow: hidden !important;
-  }
-  #staff-svg {
-    max-height: 160px !important;
-  }
-  #piano-wrap {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-}
+/* mobile sizing handled entirely in JS buildPiano() */
 </style>
 </head>
 <body>
@@ -231,7 +199,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v1.7 &nbsp;mobile: pure CSS key sizing, fix clipping</span><br>
+    <span style="color:#c8a96e;">v1.8 &nbsp;fully dynamic screen-aware sizing</span><br>
     <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
@@ -355,23 +323,40 @@ function pickNextNote(){
 
 // ── Piano ──────────────────────────────────────────────
 function buildPiano(){
-  const totalW=window.innerWidth;
-  const ww=Math.max(11,Math.floor((totalW-4)/WHITE_MIDI.length)-1);
-  const wh=Math.min(77,Math.max(46,Math.floor(window.innerHeight*0.119)));
-  const bw=Math.max(7,Math.floor(ww*0.58));
-  const bh=Math.floor(wh*0.62);
+  const totalW = window.innerWidth;
+  const totalH = window.innerHeight;
+
+  // Dynamically size the piano based on actual screen real estate.
+  // Budget: HUD ~36px, piano label ~22px, staff panel gets the rest.
+  // Piano key height = 22% of screen height, clamped between 48px and 130px.
+  const hudH    = document.getElementById('hud').offsetHeight || 36;
+  const labelH  = 22;
+  const availH  = totalH - hudH - labelH;
+  const wh      = Math.min(130, Math.max(48, Math.round(availH * 0.25)));
+
+  // Key width: fit all 52 white keys across full screen width
+  const ww      = Math.max(10, Math.floor((totalW - 2) / WHITE_MIDI.length) - 1);
+  const bw      = Math.max(6,  Math.floor(ww * 0.6));
+  const bh      = Math.floor(wh * 0.62);
+
+  // Push the height into the piano area element directly so layout reflows
+  const pianoArea = document.getElementById('piano-area');
+  pianoArea.style.height = (wh + labelH + 8) + 'px';
+  pianoArea.style.flexShrink = '0';
 
   const inner=document.getElementById('piano-inner');
   inner.innerHTML='';
   inner.style.width=(WHITE_MIDI.length*(ww+1))+'px';
   inner.style.height=wh+'px';
+  // Reset any previously inline-styled key heights so our new values apply cleanly
+  document.querySelectorAll('.wk,.bk').forEach(k=>k.style.height='');
 
   const wx={};
   WHITE_MIDI.forEach((m,i)=>{
     const x=i*(ww+1); wx[m]=x;
     const k=document.createElement('div');
     k.className='wk'; k.dataset.midi=m;
-    k.style.left=x+'px'; k.style.width=ww+'px'; k.style.height=wh+'px';
+    k.style.left=x+'px'; k.style.width=ww+'px'; k.style.height=wh+'px'; k.style.lineHeight=wh+'px';
     applyKeyZone(k, m, false);
     const nm=midiName(m);
     if(nm.startsWith('C')){k.classList.add('show-label');k.textContent=nm;}
