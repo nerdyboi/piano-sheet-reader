@@ -9,6 +9,22 @@
 html, body { width: 100%; height: 100%; overflow: hidden; background: #0e0e10; }
 body { display: flex; flex-direction: column; font-family: 'Courier New', monospace; color: #f0ede6; }
 
+/* ── Mobile: rotate portrait phones to landscape ── */
+#rotate-wrapper {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column; flex: 1;
+}
+@media only screen and (max-width: 768px) and (orientation: portrait) {
+  #rotate-wrapper {
+    position: fixed; top: 0; left: 0;
+    width: 100vh;
+    height: 100vw;
+    transform-origin: top left;
+    transform: rotate(90deg) translateY(-100%);
+    overflow: hidden;
+  }
+}
+
 #start-screen {
   position: fixed; inset: 0; background: #0e0e10;
   display: flex; flex-direction: column;
@@ -153,6 +169,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 </style>
 </head>
 <body>
+<div id="rotate-wrapper">
 
 <div id="start-screen">
   <h1>Piano Sheet Reader</h1>
@@ -294,6 +311,7 @@ function buildPiano(){
     const nm=midiName(m);
     if(nm.startsWith('C')){k.classList.add('show-label');k.textContent=nm;}
     k.addEventListener('mousedown',e=>{e.preventDefault();handleKey(m);});
+    k.addEventListener('touchstart',e=>{e.preventDefault();handleKey(m);},{passive:false});
     inner.appendChild(k);
   });
 
@@ -305,6 +323,7 @@ function buildPiano(){
     k.style.width=bw+'px'; k.style.height=bh+'px';
     applyKeyZone(k, m, true);
     k.addEventListener('mousedown',e=>{e.preventDefault();handleKey(m);});
+    k.addEventListener('touchstart',e=>{e.preventDefault();handleKey(m);},{passive:false});
     inner.appendChild(k);
   });
 
@@ -708,5 +727,6 @@ window.addEventListener('resize',()=>{
 
 document.getElementById('history-panel').classList.add('collapsed');
 </script>
+</div><!-- /rotate-wrapper -->
 </body>
 </html>
