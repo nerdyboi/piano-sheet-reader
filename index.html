@@ -19,24 +19,42 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 
 /* mobile: CSS removed, sizes controlled by JS */
 
-/* Mobile landscape resize handle */
-#mobile-resize {
+/* Resize bar — shown always on landscape touch, hidden on desktop */
+#resize-bar {
   display: none;
 }
 @media only screen and (orientation: landscape) and (pointer: coarse) {
-  #mobile-resize {
+  #resize-bar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 2px 10px;
+    gap: 4px;
+    padding: 3px 8px;
     background: #161618;
     border-top: 0.5px solid #2a2a2e;
+    border-bottom: 0.5px solid #2a2a2e;
+    flex-shrink: 0;
     font-size: 9px;
     color: #555;
-    flex-shrink: 0;
   }
-  #mobile-resize input { flex: 1; accent-color: #c8a96e; }
+  #resize-bar input[type=range] {
+    flex: 1;
+    accent-color: #c8a96e;
+    height: 16px;
+  }
+  #resize-bar .rb-label {
+    white-space: nowrap;
+    font-size: 8px;
+    color: #444;
+  }
+  #resize-bar .rb-sep {
+    width: 1px;
+    height: 14px;
+    background: #2a2a2e;
+    margin: 0 4px;
+  }
 }
+
+
 
 #start-screen {
   position: fixed; inset: 0; background: #0e0e10;
@@ -240,7 +258,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v3.4 &nbsp;fix: removed broken mobile CSS, clean buildPiano</span><br>
+    <span style="color:#c8a96e;">v3.5 &nbsp;mobile: staff + keys height sliders above piano</span><br>
     <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
@@ -310,14 +328,16 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
     </div>
   </div>
 
+  <div id="resize-bar">
+    <span class="rb-label">📄 staff</span>
+    <input type="range" id="staff-size-slider" min="80" max="300" value="180" step="5">
+    <div class="rb-sep"></div>
+    <span class="rb-label">🎹 keys</span>
+    <input type="range" id="keys-size-slider" min="40" max="160" value="80" step="5">
+  </div>
   <div id="piano-area">
     <div id="piano-label" style="height:14px"></div>
     <div id="piano-wrap"><div id="piano-inner"></div></div>
-  </div>
-
-  <div id="mobile-resize">
-    <span>piano size:</span>
-    <input type="range" id="piano-size-slider" min="40" max="160" value="90" step="5">
   </div>
 </div>
 
@@ -994,14 +1014,26 @@ window.addEventListener('resize',()=>{
   if(currentMode==='sequence' && seqNotes.length) drawSequenceStaff();
 });
 
-document.getElementById('piano-size-slider').addEventListener('input', function(){
+// Staff height slider (mobile landscape only)
+document.getElementById('staff-size-slider').addEventListener('input', function(){
+  const h = parseInt(this.value);
+  document.getElementById('main').style.height = h+'px';
+  document.getElementById('main').style.maxHeight = h+'px';
+  document.getElementById('main').style.minHeight = h+'px';
+  if(currentNote) drawStaff(currentNote);
+  if(currentMode==='sequence' && seqNotes.length) drawSequenceStaff();
+});
+
+// Piano key height slider (mobile landscape only)
+document.getElementById('keys-size-slider').addEventListener('input', function(){
   const h = parseInt(this.value);
   const bh = Math.floor(h * 0.62);
   document.querySelectorAll('.wk').forEach(k => k.style.height = h+'px');
   document.querySelectorAll('.bk').forEach(k => k.style.height = bh+'px');
   document.getElementById('piano-inner').style.height = h+'px';
-  document.getElementById('piano-area').style.height = (h+14)+'px';
+  document.getElementById('piano-area').style.height = (h + 14)+'px';
 });
+
 
 document.getElementById('history-panel').classList.add('collapsed');
 </script>
