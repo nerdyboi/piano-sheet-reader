@@ -27,20 +27,28 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
     height: 5vh !important;
     min-height: 5vh !important;
     max-height: 5vh !important;
-    padding: 0 10px !important;
+    padding: 0 8px !important;
     font-size: 10px !important;
     flex-shrink: 0 !important;
     overflow: hidden !important;
   }
   #seq-strip {
+    height: 5vh !important;
     max-height: 5vh !important;
+    min-height: 5vh !important;
     flex-shrink: 0 !important;
-    padding: 2px 8px !important;
+    padding: 0 8px !important;
+    align-items: center !important;
+  }
+  .seq-dot {
+    width: 20px !important;
+    height: 20px !important;
+    font-size: 7px !important;
   }
   #main {
-    height: 27.5vh !important;
-    max-height: 27.5vh !important;
-    min-height: 27.5vh !important;
+    height: 25vh !important;
+    max-height: 25vh !important;
+    min-height: 25vh !important;
     overflow: hidden !important;
   }
   #staff-panel {
@@ -48,17 +56,17 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
     min-height: 0 !important;
   }
   #piano-area {
-    height: 17.5vh !important;
-    min-height: 17.5vh !important;
-    max-height: 17.5vh !important;
+    height: 25vh !important;
+    min-height: 25vh !important;
+    max-height: 25vh !important;
     flex-shrink: 0 !important;
     padding: 2px 0 !important;
   }
   #piano-inner {
-    height: calc(17.5vh - 20px) !important;
+    height: calc(25vh - 22px) !important;
   }
-  .wk { height: calc(17.5vh - 20px) !important; }
-  .bk { height: calc(11vh - 12px) !important; }
+  .wk { height: calc(25vh - 22px) !important; }
+  .bk { height: calc(15vh - 12px) !important; }
 }
 
 #start-screen {
@@ -263,7 +271,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v3.0 &nbsp;mobile landscape: hard 50/50 staff/piano split</span><br>
+    <span style="color:#c8a96e;">v3.1 &nbsp;mobile: 60vh top split, tiny dots, 50/50 staff+piano</span><br>
     <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
