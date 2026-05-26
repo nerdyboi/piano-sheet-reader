@@ -17,6 +17,49 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 
 /* mobile: no special treatment, works normally */
 
+/* ── Mobile landscape: hard 50/50 top/bottom split ── */
+@media only screen and (orientation: landscape) and (pointer: coarse) {
+  #game-screen {
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+  #hud {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 10px !important;
+    flex-shrink: 0 !important;
+    overflow: hidden !important;
+  }
+  #seq-strip {
+    max-height: 40px !important;
+    flex-shrink: 0 !important;
+    padding: 3px 8px !important;
+  }
+  #main {
+    max-height: calc(50vh - 32px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  #staff-panel {
+    overflow: hidden !important;
+    min-height: 0 !important;
+  }
+  #piano-area {
+    height: 50vh !important;
+    min-height: 50vh !important;
+    max-height: 50vh !important;
+    flex-shrink: 0 !important;
+    padding: 6px 0 !important;
+  }
+  #piano-inner {
+    height: calc(50vh - 28px) !important;
+  }
+  .wk { height: calc(50vh - 28px) !important; }
+  .bk { height: calc(31vh - 16px) !important; }
+}
+
 #start-screen {
   position: fixed; inset: 0; background: #0e0e10;
   display: flex; flex-direction: column;
@@ -219,7 +262,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v2.8 &nbsp;removed staff highlight, grey zones on sequence mode</span><br>
+    <span style="color:#c8a96e;">v3.0 &nbsp;mobile landscape: hard 50/50 staff/piano split</span><br>
     <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
