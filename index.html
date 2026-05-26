@@ -19,6 +19,14 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 
 /* mobile: CSS removed, sizes controlled by JS */
 
+@media only screen and (orientation: landscape) and (pointer: coarse) {
+  #mode-badge { display: none !important; }
+  #timer-bar-wrap { display: none !important; }
+  #seq-strip { display: none !important; } /* moved into hud */
+  #hud-seq { display: flex !important; }
+  #piano-label { display: none !important; }
+}
+
 /* Resize bar — shown always on landscape touch, hidden on desktop */
 #resize-bar {
   display: none;
@@ -258,7 +266,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v3.5 &nbsp;mobile: staff + keys height sliders above piano</span><br>
+    <span style="color:#c8a96e;">v3.6 &nbsp;mobile: no mode bar, seq dots in HUD replacing timer</span><br>
     <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
@@ -301,6 +309,8 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
     <div class="stat">streak<span id="streak-val">0</span></div>
     <span id="mode-badge">BOTH</span>
     <div id="timer-bar-wrap"><div id="timer-bar"></div></div>
+    <!-- Mobile landscape: seq dots inline in HUD replacing timer -->
+    <div id="hud-seq" style="display:none;flex:1;align-items:center;gap:3px;overflow:hidden;"></div>
     <button id="history-btn">missed</button>
     <button id="menu-btn">menu</button>
   </div>
@@ -880,25 +890,41 @@ function buildSequence() {
   seqIndex = 0;
 }
 
+function makeDot(note, i) {
+  const dot = document.createElement('div');
+  dot.className = 'seq-dot';
+  if (i < seqIndex)        dot.classList.add('done');
+  else if (i === seqIndex) dot.classList.add('active-note');
+  else                     dot.classList.add('pending');
+  dot.textContent = i < seqIndex ? '✓' : (i === seqIndex ? midiName(note.midi) : '?');
+  return dot;
+}
+
 function renderSeqStrip() {
+  // Main strip (portrait / desktop)
   const strip = document.getElementById('seq-strip');
-  // remove old dots (keep best + progress spans)
   strip.querySelectorAll('.seq-dot').forEach(d => d.remove());
   const best = document.getElementById('seq-best');
   const prog = document.getElementById('seq-progress');
-
-  seqNotes.forEach((note, i) => {
-    const dot = document.createElement('div');
-    dot.className = 'seq-dot';
-    if (i < seqIndex)       dot.classList.add('done');
-    else if (i === seqIndex) dot.classList.add('active-note');
-    else                     dot.classList.add('pending');
-    dot.textContent = i < seqIndex ? '✓' : (i === seqIndex ? midiName(note.midi) : '?');
-    strip.insertBefore(dot, best);
-  });
-
+  seqNotes.forEach((note, i) => strip.insertBefore(makeDot(note, i), best));
   prog.textContent = seqIndex + '/' + SEQ_LEN;
   best.textContent = seqBest > 0 ? 'best: ' + seqBest : '';
+
+  // HUD inline dots (mobile landscape)
+  const hudSeq = document.getElementById('hud-seq');
+  hudSeq.innerHTML = '';
+  seqNotes.forEach((note, i) => {
+    const dot = makeDot(note, i);
+    dot.style.width = '22px';
+    dot.style.height = '22px';
+    dot.style.fontSize = '7px';
+    dot.style.flexShrink = '0';
+    hudSeq.appendChild(dot);
+  });
+  const prog2 = document.createElement('span');
+  prog2.style.cssText = 'font-size:9px;color:#555;white-space:nowrap;margin-left:4px;';
+  prog2.textContent = seqIndex+'/'+SEQ_LEN;
+  hudSeq.appendChild(prog2);
 }
 
 function seqHandleKey(midi) {
