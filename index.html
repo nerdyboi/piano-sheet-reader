@@ -963,8 +963,6 @@ document.getElementById('btn-sequence').addEventListener('click',()=>startGame('
 
 document.getElementById('speed-slider').addEventListener('input',function(){
   document.getElementById('speed-label').textContent=this.value+'s';
-  document.getElementById('hud-speed-slider').value=this.value;
-  document.getElementById('hud-speed-label').textContent=this.value+'s';
   noteDuration=parseInt(this.value)*1000;
 });
 
