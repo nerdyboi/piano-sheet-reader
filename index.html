@@ -27,7 +27,15 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 
 .mode-cards {
   display: flex; gap: 14px; margin-top: 4px;
+  overflow-x: auto; overflow-y: visible;
+  padding: 6px 8px 10px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  width: 100%;
+  max-width: 100vw;
 }
+.mode-cards::-webkit-scrollbar { display: none; }
+.mode-card { scroll-snap-align: center; flex-shrink: 0; }
 .mode-card {
   background: #161618; border: 0.5px solid #2a2a2e;
   border-radius: 10px; padding: 18px 22px;
@@ -58,6 +66,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 #mode-badge.both { background: #2a2420; color: #c8a96e; }
 #mode-badge.treble { background: #1a2030; color: #6aadee; }
 #mode-badge.bass { background: #1a2820; color: #6fcf97; }
+#mode-badge.sequence { background: #2a1a30; color: #c8a0ee; }
 #timer-bar-wrap { flex: 1; height: 4px; background: #2a2a2e; border-radius: 2px; overflow: hidden; }
 #timer-bar { height: 100%; background: #c8a96e; border-radius: 2px; width: 100%; }
 #menu-btn, #history-btn {
@@ -140,9 +149,9 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 /* bass mode: C2-C4 green tint */
 .wk.zone-bass { background: #c4ddd0; }
 
-.wk.force { background: #a8d8a8 !important; animation: pg 0.5s infinite alternate; }
-.wk.flash-good { background: #a8d8a8 !important; }
-.wk.flash-bad { background: #f4a0a0 !important; }
+.wk.force { background: #5ed490 !important; border-color: #5ed490 !important; animation: pg 0.5s infinite alternate; }
+.wk.flash-good { background: #5ed490 !important; transition: none !important; }
+.wk.flash-bad { background: #f4a0a0 !important; transition: none !important; }
 
 .bk {
   background: #1a1a1a; border: 0.5px solid #000;
@@ -153,11 +162,52 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 .bk.zone-both { background: #3a3835; }
 .bk.zone-treble { background: #2a3545; }
 .bk.zone-bass { background: #243530; }
-.bk.force { background: #6fcf97 !important; animation: pg 0.5s infinite alternate; }
-.bk.flash-good { background: #6fcf97 !important; }
-.bk.flash-bad { background: #eb5757 !important; }
+.bk.force { background: #5ed490 !important; animation: pg 0.5s infinite alternate; }
+.bk.flash-good { background: #5ed490 !important; transition: none !important; }
+.bk.flash-bad { background: #eb5757 !important; transition: none !important; }
 
 @keyframes pg { from{opacity:1} to{opacity:0.5} }
+
+/* Sequence mode note strip */
+#seq-strip {
+  display: none;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #111113;
+  border-bottom: 0.5px solid #2a2a2e;
+  overflow: hidden;
+  flex-shrink: 0;
+  min-height: 48px;
+}
+#seq-strip.active { display: flex; }
+.seq-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid #333;
+  background: #1a1a1c;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #555; font-family: inherit;
+  flex-shrink: 0; transition: all 0.15s;
+}
+.seq-dot.done { background: #6fcf97; border-color: #6fcf97; color: #0e0e10; font-weight: 700; }
+.seq-dot.active-note { background: #c8a96e; border-color: #c8a96e; color: #0e0e10; font-weight: 700; transform: scale(1.2); }
+.seq-dot.wrong-flash { background: #eb5757; border-color: #eb5757; animation: shake 0.3s; }
+.seq-dot.pending { background: #1a1a1c; border-color: #2a2a2e; color: #333; }
+#seq-progress {
+  font-size: 10px; color: #555; margin-left: auto;
+  white-space: nowrap; align-self: center; padding-left: 8px;
+}
+#seq-best {
+  font-size: 10px; color: #444; white-space: nowrap;
+  align-self: center;
+}
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-4px)}
+  75%{transform:translateX(4px)}
+}
 
 
 </style>
@@ -169,7 +219,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v2.2 &nbsp;shifted 52-key window to B1-D9</span><br>
+    <span style="color:#c8a96e;">v2.8 &nbsp;removed staff highlight, grey zones on sequence mode</span><br>
     <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
@@ -193,6 +243,11 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
       <div class="mc-title">Bass Only</div>
       <div class="mc-desc">C2 – C4<br>left hand range</div>
     </div>
+    <div class="mode-card" id="btn-sequence">
+      <div class="mc-icon">𝄆</div>
+      <div class="mc-title">Sequence</div>
+      <div class="mc-desc">10 notes in a row<br>no mistakes allowed</div>
+    </div>
   </div>
   <div class="speed-control">
     <span>time per note:</span>
@@ -209,6 +264,13 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
     <div id="timer-bar-wrap"><div id="timer-bar"></div></div>
     <button id="history-btn">missed</button>
     <button id="menu-btn">menu</button>
+  </div>
+
+  <!-- Sequence mode note strip -->
+  <div id="seq-strip">
+    <!-- dots injected by JS -->
+    <span id="seq-best"></span>
+    <span id="seq-progress"></span>
   </div>
 
   <div id="main">
@@ -252,7 +314,7 @@ function staffPos(midi,clef){return diat(midi)-(clef==='treble'?diat(64):diat(43
 const TREBLE_NOTES=[];
 const BASS_NOTES=[];
 for(let m=55;m<=84;m++) if(isWhite(m)) TREBLE_NOTES.push({midi:m,clef:'treble',pos:staffPos(m,'treble')});
-for(let m=33;m<=62;m++) if(isWhite(m)) BASS_NOTES.push({midi:m,clef:'bass',pos:staffPos(m,'bass')});
+for(let m=35;m<=62;m++) if(isWhite(m)) BASS_NOTES.push({midi:m,clef:'bass',pos:staffPos(m,'bass')});
 
 // Smart randomizer: tracks last N picks to avoid repeats
 const ANTI_REPEAT = 4; // won't repeat same note within last 4 picks
@@ -362,15 +424,13 @@ function buildPiano(){
 }
 
 function applyKeyZone(el, m, isBlack){
-  el.classList.remove('zone-both','zone-treble','zone-bass');
-  if(currentMode==='both'){
-    // grey out C3(48)-B4(71)
+  el.classList.remove('zone-both','zone-treble','zone-bass','zone-c3','zone-c4');
+  if(currentMode==='both' || currentMode==='sequence'){
+    // grey out C3(48)-B3(59) and C4(60)-B4(71)
     if(m>=48&&m<=71) el.classList.add('zone-both');
   } else if(currentMode==='treble'){
-    // blue: C4(60)-G5(79)
     if(m>=55&&m<=84) el.classList.add('zone-treble');
   } else if(currentMode==='bass'){
-    // green: C2(36)-C4(60)
     if(m>=33&&m<=62) el.classList.add('zone-bass');
   }
 }
@@ -459,12 +519,6 @@ function drawStaff(note){
 
     const isBass=note.clef==='bass';
     const sTop=isBass?bTop:tTop;
-    const hl=document.createElementNS('http://www.w3.org/2000/svg','rect');
-    hl.setAttribute('x','50');hl.setAttribute('y',String(sTop-3));
-    hl.setAttribute('width',String(W-70));hl.setAttribute('height',String(4*gap+6));
-    hl.setAttribute('fill',isBass?'#1a1828':'#162018');
-    hl.setAttribute('rx','3');hl.setAttribute('opacity','0.5');
-    svgEl.insertBefore(hl,svgEl.firstChild);
 
     placeNote(svgEl,note,sTop,W/2,gap,6,4,true);
   } else {
@@ -472,13 +526,6 @@ function drawStaff(note){
     svgLine(svgEl,50,tTop,50,tTop+4*gap,'#4a4a4a',1.5);
     if(note.clef==='treble') svgTxt(svgEl,20,tTop+40,'𝄞',44);
     else svgTxt(svgEl,22,tTop+24,'𝄢',28);
-
-    const hl=document.createElementNS('http://www.w3.org/2000/svg','rect');
-    hl.setAttribute('x','50');hl.setAttribute('y',String(tTop-3));
-    hl.setAttribute('width',String(W-70));hl.setAttribute('height',String(4*gap+6));
-    hl.setAttribute('fill',note.clef==='bass'?'#1a1828':'#162018');
-    hl.setAttribute('rx','3');hl.setAttribute('opacity','0.5');
-    svgEl.insertBefore(hl,svgEl.firstChild);
 
     placeNote(svgEl,note,tTop,W/2,gap,6,4,true);
   }
@@ -577,6 +624,85 @@ function placeNote(svgEl,note,sTop,noteX,gap,rx,ry,showLabel){
   }
 }
 
+// ── Sequence staff: draw all 10 notes at once ───────────
+function drawSequenceStaff() {
+  const svgEl = document.getElementById('staff-svg');
+  const panel = document.getElementById('staff-panel');
+  const W = Math.min(panel.clientWidth - 20, 700);
+  const gap = 9;
+  const tTop = 38, bTop = 118;
+  const H = bTop + 4*gap + 40;
+
+  svgEl.setAttribute('width', W);
+  svgEl.setAttribute('height', H);
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svgEl.innerHTML = '';
+
+  // Draw both staves
+  function drawLines(top) {
+    for (let i = 0; i < 5; i++) {
+      const y = top + (4-i)*gap;
+      svgLine(svgEl, 44, y, W-10, y, '#4a4a4a', 1);
+    }
+  }
+  drawLines(tTop); drawLines(bTop);
+  svgLine(svgEl, 44, tTop, 44, bTop+4*gap, '#4a4a4a', 1.5);
+  svgTxt(svgEl, 16, tTop+36, '𝄞', 38);
+  svgTxt(svgEl, 18, bTop+20, '𝄢', 24);
+
+  // Space notes evenly across the width
+  const startX = 70;
+  const endX = W - 20;
+  const step = (endX - startX) / (SEQ_LEN - 1);
+
+  seqNotes.forEach((note, i) => {
+    const noteX = startX + i * step;
+    const isBass = note.clef === 'bass';
+    const sTop = isBass ? bTop : tTop;
+
+
+
+    const botY = sTop + 4*gap;
+    const noteY = botY - note.pos*(gap/2);
+    const rx = 5, ry = 3.5;
+
+    // Ledger lines
+    if (note.pos < 0) {
+      for (let p = -2; p >= note.pos; p -= 2) {
+        const ly = botY - p*(gap/2);
+        svgLine(svgEl, noteX-rx-4, ly, noteX+rx+4, ly, i < seqIndex ? '#6fcf97' : (i === seqIndex ? '#c8a96e' : '#444'), 1);
+      }
+    }
+    if (note.pos > 8) {
+      for (let p = 10; p <= note.pos; p += 2) {
+        const ly = botY - p*(gap/2);
+        svgLine(svgEl, noteX-rx-4, ly, noteX+rx+4, ly, i < seqIndex ? '#6fcf97' : (i === seqIndex ? '#c8a96e' : '#444'), 1);
+      }
+    }
+
+    // Note color: green=done, gold=current, grey=upcoming
+    const fill = i < seqIndex ? '#6fcf97' : (i === seqIndex ? '#c8a96e' : '#3a3a3a');
+    const el = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+    el.setAttribute('cx', String(noteX));
+    el.setAttribute('cy', String(noteY));
+    el.setAttribute('rx', String(rx));
+    el.setAttribute('ry', String(ry));
+    el.setAttribute('fill', fill);
+    el.setAttribute('transform', `rotate(-12,${noteX},${noteY})`);
+    svgEl.appendChild(el);
+
+    // Stem
+    const up = note.pos < 4;
+    const sx = noteX + (up ? rx-1 : -(rx-1));
+    svgLine(svgEl, sx, noteY, sx, up ? noteY-26 : noteY+26, fill, 1.2);
+
+    // Note name below for current note only
+    if (i === seqIndex) {
+      svgTxt(svgEl, noteX - 8, H - 4, midiName(note.midi), 9, '#c8a96e');
+    }
+  });
+}
+
 // ── Timer ───────────────────────────────────────────────
 function startTimer(){
   clearTimeout(timerId);
@@ -587,6 +713,17 @@ function startTimer(){
     timerBar.style.width='0%';
   }));
   timerId=setTimeout(()=>{
+    if(currentMode==='sequence'){
+      // in sequence mode, just reset on timeout
+      streak=0;
+      seqIndex=0;
+      document.getElementById('streak-val').textContent=streak;
+      showFeedback('time — reset!','wrong');
+      renderSeqStrip();
+      drawSequenceStaff();
+      startTimer();
+      return;
+    }
     waitingForForced=true;
     streak=0;
     document.getElementById('streak-val').textContent=streak;
@@ -665,6 +802,7 @@ function renderHistory(){
 
 // ── Key handler ─────────────────────────────────────────
 function handleKey(midi){
+  if(currentMode==='sequence'){ seqHandleKey(midi); return; }
   if(!currentNote) return;
   if(waitingForForced){
     if(midi===currentNote.midi){
@@ -699,6 +837,91 @@ function showFeedback(msg,type){
   setTimeout(()=>{el.style.opacity='0';},900);
 }
 
+// ── Sequence mode ───────────────────────────────────────
+const SEQ_LEN = 10;
+let seqNotes = [];      // array of 10 notes
+let seqIndex = 0;       // which note we're on
+let seqBest = 0;        // best streak in this session
+
+function buildSequence() {
+  seqNotes = [];
+  recentPicks = [];
+  // Strict 50/50 treble/bass mix, same as both-clefs mode
+  for (let i = 0; i < SEQ_LEN; i++) {
+    const clef = i % 2 === 0 ? 'treble' : 'bass';
+    const pool = clef === 'treble' ? TREBLE_NOTES : BASS_NOTES;
+    seqNotes.push(pickNote(pool));
+  }
+  seqIndex = 0;
+}
+
+function renderSeqStrip() {
+  const strip = document.getElementById('seq-strip');
+  // remove old dots (keep best + progress spans)
+  strip.querySelectorAll('.seq-dot').forEach(d => d.remove());
+  const best = document.getElementById('seq-best');
+  const prog = document.getElementById('seq-progress');
+
+  seqNotes.forEach((note, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'seq-dot';
+    if (i < seqIndex)       dot.classList.add('done');
+    else if (i === seqIndex) dot.classList.add('active-note');
+    else                     dot.classList.add('pending');
+    dot.textContent = i < seqIndex ? '✓' : (i === seqIndex ? midiName(note.midi) : '?');
+    strip.insertBefore(dot, best);
+  });
+
+  prog.textContent = seqIndex + '/' + SEQ_LEN;
+  best.textContent = seqBest > 0 ? 'best: ' + seqBest : '';
+}
+
+function seqHandleKey(midi) {
+  if (!seqNotes.length) return;
+  const expected = seqNotes[seqIndex];
+
+  if (midi === expected.midi) {
+    flashKey(midi, 'flash-good');
+    seqIndex++;
+    if (seqIndex > seqBest) seqBest = seqIndex;
+
+    if (seqIndex === SEQ_LEN) {
+      score += 100 + streak * 5;
+      streak++;
+      document.getElementById('score-val').textContent = score;
+      document.getElementById('streak-val').textContent = streak;
+      showFeedback('🎉 complete!', 'correct');
+      renderSeqStrip();
+      drawSequenceStaff();
+      clearTimeout(timerId);
+      setTimeout(() => {
+        buildSequence();
+        renderSeqStrip();
+        drawSequenceStaff();
+        startTimer();
+      }, 900);
+    } else {
+      score += 10;
+      document.getElementById('score-val').textContent = score;
+      renderSeqStrip();
+      drawSequenceStaff();
+      startTimer();
+    }
+  } else {
+    streak = 0;
+    seqIndex = 0;
+    document.getElementById('streak-val').textContent = streak;
+    showFeedback('✗ reset!', 'wrong');
+    flashKey(midi, 'flash-bad');
+    clearTimeout(timerId);
+    setTimeout(() => {
+      renderSeqStrip();
+      drawSequenceStaff();
+      startTimer();
+    }, 400);
+  }
+}
+
 // ── Start game ──────────────────────────────────────────
 function startGame(mode){
   currentMode=mode;
@@ -712,23 +935,40 @@ function startGame(mode){
   badge.id='mode-badge';
   if(mode==='both'){badge.textContent='BOTH CLEFS';badge.classList.add('both');}
   else if(mode==='treble'){badge.textContent='TREBLE';badge.classList.add('treble');}
-  else {badge.textContent='BASS';badge.classList.add('bass');}
+  else if(mode==='bass'){badge.textContent='BASS';badge.classList.add('bass');}
+  else{badge.textContent='SEQUENCE';badge.classList.add('sequence');}
 
   document.getElementById('start-screen').style.display='none';
   document.getElementById('game-screen').style.display='flex';
   buildPiano();
   renderHistory();
-  nextNote();
+
+  if(mode==='sequence'){
+    document.getElementById('seq-strip').classList.add('active');
+    seqBest=0; seqIndex=0;
+    buildSequence();
+    renderSeqStrip();
+    drawSequenceStaff();
+    startTimer();
+  } else {
+    document.getElementById('seq-strip').classList.remove('active');
+    nextNote();
+  }
 }
 
 document.getElementById('btn-both').addEventListener('click',()=>startGame('both'));
 document.getElementById('btn-treble').addEventListener('click',()=>startGame('treble'));
 document.getElementById('btn-bass').addEventListener('click',()=>startGame('bass'));
+document.getElementById('btn-sequence').addEventListener('click',()=>startGame('sequence'));
 
 document.getElementById('speed-slider').addEventListener('input',function(){
   document.getElementById('speed-label').textContent=this.value+'s';
+  document.getElementById('hud-speed-slider').value=this.value;
+  document.getElementById('hud-speed-label').textContent=this.value+'s';
   noteDuration=parseInt(this.value)*1000;
 });
+
+
 
 document.getElementById('menu-btn').addEventListener('click',()=>{
   clearTimeout(timerId);
