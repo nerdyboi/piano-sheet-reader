@@ -266,7 +266,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v3.6 &nbsp;mobile: no mode bar, seq dots in HUD replacing timer</span><br>
+    <span style="color:#c8a96e;">v3.8 &nbsp;88 keys always fit full screen width</span><br>
     <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
@@ -357,8 +357,9 @@ function midiName(m){return NOTE_NAMES[m%12]+(Math.floor(m/12)-1);}
 function isWhite(m){return[0,2,4,5,7,9,11].includes(m%12);}
 
 const ALL_MIDI=[];
-// Window: B1(35) to D9(122) = exactly 52 white keys
-for(let m=35;m<=122;m++) ALL_MIDI.push(m);
+// Standard 88-key piano: A0(21) to C8(108) = 52 white keys
+// C3 sits at position 17/52, C4 at 24/52 — best possible centering
+for(let m=21;m<=108;m++) ALL_MIDI.push(m);
 const WHITE_MIDI=ALL_MIDI.filter(m=>isWhite(m));
 const BLACK_MIDI=ALL_MIDI.filter(m=>!isWhite(m));
 
@@ -370,7 +371,7 @@ function staffPos(midi,clef){return diat(midi)-(clef==='treble'?diat(64):diat(43
 const TREBLE_NOTES=[];
 const BASS_NOTES=[];
 for(let m=55;m<=84;m++) if(isWhite(m)) TREBLE_NOTES.push({midi:m,clef:'treble',pos:staffPos(m,'treble')});
-for(let m=35;m<=62;m++) if(isWhite(m)) BASS_NOTES.push({midi:m,clef:'bass',pos:staffPos(m,'bass')});
+for(let m=36;m<=62;m++) if(isWhite(m)) BASS_NOTES.push({midi:m,clef:'bass',pos:staffPos(m,'bass')});
 
 // Smart randomizer: tracks last N picks to avoid repeats
 const ANTI_REPEAT = 4; // won't repeat same note within last 4 picks
@@ -415,7 +416,8 @@ function pickNextNote(){
 function buildPiano(){
   const totalW = window.innerWidth;
   const totalH = window.innerHeight;
-  const ww = Math.max(10, Math.floor((totalW - 2) / WHITE_MIDI.length) - 1);
+  // Always fit all 52 white keys across full screen width
+  const ww = Math.max(1, Math.floor(totalW / WHITE_MIDI.length));
   const wh = Math.min(120, Math.max(55, Math.round(totalH * 0.20)));
   const bw = Math.max(6, Math.floor(ww * 0.6));
   const bh = Math.floor(wh * 0.62);
@@ -424,7 +426,7 @@ function buildPiano(){
 
   const inner=document.getElementById('piano-inner');
   inner.innerHTML='';
-  inner.style.width=(WHITE_MIDI.length*(ww+1))+'px';
+  inner.style.width=totalW+'px';
   inner.style.height=wh+'px';
   // Reset any previously inline-styled key heights so our new values apply cleanly
   document.querySelectorAll('.wk,.bk').forEach(k=>k.style.height='');
@@ -836,7 +838,11 @@ function renderHistory(){
 }
 
 // ── Key handler ─────────────────────────────────────────
+let _keyLock = false;
 function handleKey(midi){
+  if(_keyLock) return;
+  _keyLock = true;
+  setTimeout(()=>{ _keyLock = false; }, 300);
   if(currentMode==='sequence'){ seqHandleKey(midi); return; }
   if(!currentNote) return;
   if(waitingForForced){
@@ -929,6 +935,7 @@ function renderSeqStrip() {
 
 function seqHandleKey(midi) {
   if (!seqNotes.length) return;
+  // _keyLock already checked in handleKey
   const expected = seqNotes[seqIndex];
 
   if (midi === expected.midi) {
