@@ -17,65 +17,25 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 
 /* mobile: no special treatment, works normally */
 
-/* ── Mobile landscape: 70% of screen, 10/45/35 split inside ── */
+/* mobile: CSS removed, sizes controlled by JS */
+
+/* Mobile landscape resize handle */
+#mobile-resize {
+  display: none;
+}
 @media only screen and (orientation: landscape) and (pointer: coarse) {
-  #game-screen {
-    height: 70vh !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
+  #mobile-resize {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 10px;
+    background: #161618;
+    border-top: 0.5px solid #2a2a2e;
+    font-size: 9px;
+    color: #555;
+    flex-shrink: 0;
   }
-  /* HUD + seq strip together = 10% of 70vh = 7vh */
-  #hud {
-    height: 4vh !important;
-    min-height: 4vh !important;
-    max-height: 4vh !important;
-    padding: 0 8px !important;
-    font-size: 10px !important;
-    flex-shrink: 0 !important;
-    overflow: hidden !important;
-  }
-  #seq-strip {
-    height: 3vh !important;
-    min-height: 3vh !important;
-    max-height: 3vh !important;
-    flex-shrink: 0 !important;
-    padding: 0 8px !important;
-    align-items: center !important;
-  }
-  .seq-dot {
-    width: 18px !important;
-    height: 18px !important;
-    font-size: 7px !important;
-  }
-  /* Staff = 45% of 70vh = 31.5vh */
-  #main {
-    height: 31.5vh !important;
-    min-height: 31.5vh !important;
-    max-height: 31.5vh !important;
-    overflow: hidden !important;
-    flex-shrink: 0 !important;
-  }
-  #staff-panel {
-    overflow: hidden !important;
-    min-height: 0 !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-  #history-panel { width: 0 !important; overflow: hidden !important; }
-  /* Piano = 35% of 70vh = 24.5vh */
-  #piano-area {
-    height: 24.5vh !important;
-    min-height: 24.5vh !important;
-    max-height: 24.5vh !important;
-    flex-shrink: 0 !important;
-    padding: 2px 0 !important;
-  }
-  #piano-label { display: none !important; }
-  #piano-inner { height: calc(24.5vh - 6px) !important; }
-  .wk { height: calc(24.5vh - 6px) !important; }
-  .bk { height: calc(15vh - 4px) !important; }
-  #piano-wrap { overflow-x: auto !important; justify-content: flex-start !important; }
+  #mobile-resize input { flex: 1; accent-color: #c8a96e; }
 }
 
 #start-screen {
@@ -280,7 +240,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v3.3 &nbsp;mobile: 70vh, 10/45/35 split, 88 keys, no mode bar</span><br>
+    <span style="color:#c8a96e;">v3.4 &nbsp;fix: removed broken mobile CSS, clean buildPiano</span><br>
     <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
@@ -354,6 +314,11 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
     <div id="piano-label" style="height:14px"></div>
     <div id="piano-wrap"><div id="piano-inner"></div></div>
   </div>
+
+  <div id="mobile-resize">
+    <span>piano size:</span>
+    <input type="range" id="piano-size-slider" min="40" max="160" value="90" step="5">
+  </div>
 </div>
 
 <script>
@@ -420,15 +385,10 @@ function pickNextNote(){
 function buildPiano(){
   const totalW = window.innerWidth;
   const totalH = window.innerHeight;
-  const {wKeys, bKeys} = getVisibleMidi();
-
-  // Key width: fit visible white keys across full screen width
-  const ww = Math.max(12, Math.floor((totalW - 2) / wKeys.length) - 1);
-  // Key height: 20% of screen height, min 55px max 120px
+  const ww = Math.max(10, Math.floor((totalW - 2) / WHITE_MIDI.length) - 1);
   const wh = Math.min(120, Math.max(55, Math.round(totalH * 0.20)));
-  const bw = Math.max(7, Math.floor(ww * 0.6));
+  const bw = Math.max(6, Math.floor(ww * 0.6));
   const bh = Math.floor(wh * 0.62);
-
   const pianoArea = document.getElementById('piano-area');
   pianoArea.style.flexShrink = '0';
 
@@ -1031,6 +991,16 @@ document.getElementById('clear-hist').addEventListener('click',()=>{
 window.addEventListener('resize',()=>{
   buildPiano();
   if(currentNote) drawStaff(currentNote);
+  if(currentMode==='sequence' && seqNotes.length) drawSequenceStaff();
+});
+
+document.getElementById('piano-size-slider').addEventListener('input', function(){
+  const h = parseInt(this.value);
+  const bh = Math.floor(h * 0.62);
+  document.querySelectorAll('.wk').forEach(k => k.style.height = h+'px');
+  document.querySelectorAll('.bk').forEach(k => k.style.height = bh+'px');
+  document.getElementById('piano-inner').style.height = h+'px';
+  document.getElementById('piano-area').style.height = (h+14)+'px';
 });
 
 document.getElementById('history-panel').classList.add('collapsed');
