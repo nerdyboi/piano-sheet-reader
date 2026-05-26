@@ -169,7 +169,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v1.9 &nbsp;mobile: removed rotation, works in portrait</span><br>
+    <span style="color:#c8a96e;">v2.2 &nbsp;shifted 52-key window to B1-D9</span><br>
     <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
@@ -239,7 +239,8 @@ function midiName(m){return NOTE_NAMES[m%12]+(Math.floor(m/12)-1);}
 function isWhite(m){return[0,2,4,5,7,9,11].includes(m%12);}
 
 const ALL_MIDI=[];
-for(let m=21;m<=108;m++) ALL_MIDI.push(m);
+// Window: B1(35) to D9(122) = exactly 52 white keys
+for(let m=35;m<=122;m++) ALL_MIDI.push(m);
 const WHITE_MIDI=ALL_MIDI.filter(m=>isWhite(m));
 const BLACK_MIDI=ALL_MIDI.filter(m=>!isWhite(m));
 
@@ -292,15 +293,33 @@ function pickNextNote(){
 }
 
 // ── Piano ──────────────────────────────────────────────
+function getVisibleMidi(){
+  // On mobile (touch), only show the keys actually needed for the current quiz range
+  // Bass:   A1(33) - D4(62)
+  // Treble: G3(55) - C6(84)
+  // Both:   A1(33) - C6(84)
+  // Desktop always shows all 88 keys
+  const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  if(!isMobile) return {wKeys: WHITE_MIDI, bKeys: BLACK_MIDI, lo: 21, hi: 108};
+  let lo, hi;
+  if(currentMode === 'treble')     { lo = 55; hi = 84; }
+  else if(currentMode === 'bass')  { lo = 33; hi = 62; }
+  else                             { lo = 33; hi = 84; } // both
+  const wKeys = WHITE_MIDI.filter(m => m >= lo && m <= hi);
+  const bKeys = BLACK_MIDI.filter(m => m >= lo && m <= hi);
+  return {wKeys, bKeys, lo, hi};
+}
+
 function buildPiano(){
   const totalW = window.innerWidth;
   const totalH = window.innerHeight;
+  const {wKeys, bKeys} = getVisibleMidi();
 
-  // Key width: always fit all 52 keys across screen width
-  const ww = Math.max(10, Math.floor((totalW - 2) / WHITE_MIDI.length) - 1);
-  // Key height: 20% of screen height, min 55px max 120px — works on any screen
+  // Key width: fit visible white keys across full screen width
+  const ww = Math.max(12, Math.floor((totalW - 2) / wKeys.length) - 1);
+  // Key height: 20% of screen height, min 55px max 120px
   const wh = Math.min(120, Math.max(55, Math.round(totalH * 0.20)));
-  const bw = Math.max(6, Math.floor(ww * 0.6));
+  const bw = Math.max(7, Math.floor(ww * 0.6));
   const bh = Math.floor(wh * 0.62);
 
   const pianoArea = document.getElementById('piano-area');
