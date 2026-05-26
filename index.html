@@ -10,34 +10,12 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0e0e10; }
 body { display: flex; flex-direction: column; font-family: 'Courier New', monospace; color: #f0ede6; }
 
 /* ── Mobile layout ── */
-#rotate-wrapper {
+/* mobile: no special treatment */ body {
   width: 100%; height: 100%;
   display: flex; flex-direction: column; flex: 1;
 }
 
-/* Portrait phone: show a "please rotate" overlay */
-#portrait-prompt {
-  display: none;
-  position: fixed; inset: 0; background: #0e0e10; z-index: 9999;
-  flex-direction: column; align-items: center; justify-content: center;
-  gap: 20px; text-align: center; padding: 2rem;
-}
-#portrait-prompt .pp-arrow {
-  font-size: 52px; color: #c8a96e;
-  animation: rotatehint 2s ease-in-out infinite;
-}
-#portrait-prompt p { font-size: 14px; color: #888; line-height: 1.8; max-width: 240px; }
-
-@keyframes rotatehint {
-  0%   { transform: rotate(0deg); opacity: 1; }
-  45%  { transform: rotate(90deg); opacity: 1; }
-  55%  { transform: rotate(90deg); opacity: 0.5; }
-  100% { transform: rotate(0deg); opacity: 1; }
-}
-
-@media only screen and (max-width: 900px) and (orientation: portrait) and (pointer: coarse) {
-  #portrait-prompt { display: flex; }
-}
+/* mobile: no special treatment, works normally */
 
 #start-screen {
   position: fixed; inset: 0; background: #0e0e10;
@@ -181,25 +159,17 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 
 @keyframes pg { from{opacity:1} to{opacity:0.5} }
 
-/* mobile sizing handled entirely in JS buildPiano() */
+
 </style>
 </head>
 <body>
-<div id="rotate-wrapper">
-
-<!-- Portrait rotate prompt (mobile only) -->
-<div id="portrait-prompt">
-  <div class="pp-arrow">↻</div>
-  <p>Rotate your phone to landscape mode to play</p>
-</div>
-
 <div id="start-screen">
   <h1>Piano Sheet Reader</h1>
   <p>Choose a practice mode below.</p>
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v1.8 &nbsp;fully dynamic screen-aware sizing</span><br>
+    <span style="color:#c8a96e;">v1.9 &nbsp;mobile: removed rotation, works in portrait</span><br>
     <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
@@ -326,22 +296,14 @@ function buildPiano(){
   const totalW = window.innerWidth;
   const totalH = window.innerHeight;
 
-  // Dynamically size the piano based on actual screen real estate.
-  // Budget: HUD ~36px, piano label ~22px, staff panel gets the rest.
-  // Piano key height = 22% of screen height, clamped between 48px and 130px.
-  const hudH    = document.getElementById('hud').offsetHeight || 36;
-  const labelH  = 22;
-  const availH  = totalH - hudH - labelH;
-  const wh      = Math.min(130, Math.max(48, Math.round(availH * 0.25)));
+  // Key width: always fit all 52 keys across screen width
+  const ww = Math.max(10, Math.floor((totalW - 2) / WHITE_MIDI.length) - 1);
+  // Key height: 20% of screen height, min 55px max 120px — works on any screen
+  const wh = Math.min(120, Math.max(55, Math.round(totalH * 0.20)));
+  const bw = Math.max(6, Math.floor(ww * 0.6));
+  const bh = Math.floor(wh * 0.62);
 
-  // Key width: fit all 52 white keys across full screen width
-  const ww      = Math.max(10, Math.floor((totalW - 2) / WHITE_MIDI.length) - 1);
-  const bw      = Math.max(6,  Math.floor(ww * 0.6));
-  const bh      = Math.floor(wh * 0.62);
-
-  // Push the height into the piano area element directly so layout reflows
   const pianoArea = document.getElementById('piano-area');
-  pianoArea.style.height = (wh + labelH + 8) + 'px';
   pianoArea.style.flexShrink = '0';
 
   const inner=document.getElementById('piano-inner');
@@ -771,6 +733,5 @@ window.addEventListener('resize',()=>{
 
 document.getElementById('history-panel').classList.add('collapsed');
 </script>
-</div><!-- /rotate-wrapper -->
 </body>
 </html>
