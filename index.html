@@ -270,8 +270,9 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <h1>Piano Sheet Reader</h1>
   <p>Choose a practice mode below.</p>
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
-    v6.1 &nbsp;·&nbsp; 2026-05-27<br>
+    v6.2 &nbsp;·&nbsp; 2026-05-27<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
+    <span style="color:#c8a96e;">v6.2 &nbsp;staff stays centered when scaling</span><br>
     <span style="color:#c8a96e;">v6.1 &nbsp;staff slider: scales content AND reflows layout</span><br>
     <span style="color:#c8a96e;">v5.9 &nbsp;keys slider capped, accidentals C2-E6</span><br>
     <span style="color:#c8a96e;">v5.8 &nbsp;staff always centered between HUD and piano</span><br>
@@ -1170,11 +1171,11 @@ document.getElementById('staff-size-slider').addEventListener('input', function(
   main.style.maxHeight = val + 'px';
   main.style.minHeight = val + 'px';
 
-  // Scale the SVG to fit inside the new container height
-  const naturalH = svgEl.getAttribute('height') || 200;
-  const scale = Math.min(1, (val - 10) / naturalH);
+  // Scale SVG from center so it stays centered in the panel
+  const naturalH = parseFloat(svgEl.getAttribute('height')) || 200;
+  const scale = Math.min(1, (val - 20) / naturalH);
   svgEl.style.transform = `scale(${scale})`;
-  svgEl.style.transformOrigin = 'top center';
+  svgEl.style.transformOrigin = 'center center';
 });
 
 // Piano key height slider (mobile landscape only)
