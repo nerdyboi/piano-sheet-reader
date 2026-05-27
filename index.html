@@ -114,6 +114,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
 #mode-badge.treble { background: #1a2030; color: #6aadee; }
 #mode-badge.bass { background: #1a2820; color: #6fcf97; }
 #mode-badge.sequence { background: #2a1a30; color: #c8a0ee; }
+#mode-badge.accidental { background: #2a1520; color: #ee8080; }
 #timer-bar-wrap { flex: 1; height: 4px; background: #2a2a2e; border-radius: 2px; overflow: hidden; }
 #timer-bar { height: 100%; background: #c8a96e; border-radius: 2px; width: 100%; }
 #menu-btn, #history-btn {
@@ -266,7 +267,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
     v1.5 &nbsp;·&nbsp; 2026-05-25<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v3.8 &nbsp;88 keys always fit full screen width</span><br>
+    <span style="color:#c8a96e;">v4.6 &nbsp;shuffle-bag randomizer: full pool before any repeats</span><br>
     <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
     <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
     <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
@@ -294,6 +295,11 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
       <div class="mc-icon">𝄆</div>
       <div class="mc-title">Sequence</div>
       <div class="mc-desc">10 notes in a row<br>no mistakes allowed</div>
+    </div>
+    <div class="mode-card" id="btn-accidental">
+      <div class="mc-icon">#♭</div>
+      <div class="mc-title">Accidentals</div>
+      <div class="mc-desc">sharps &amp; flats only<br>10 in a row</div>
     </div>
   </div>
   <div class="speed-control">
@@ -363,27 +369,54 @@ for(let m=21;m<=108;m++) ALL_MIDI.push(m);
 const WHITE_MIDI=ALL_MIDI.filter(m=>isWhite(m));
 const BLACK_MIDI=ALL_MIDI.filter(m=>!isWhite(m));
 
-const S2D=[0,null,1,null,2,3,null,4,null,5,null,6];
-function diat(midi){const o=Math.floor(midi/12)-1;const d=S2D[midi%12];return o*7+(d===null?0:d);}
+// For sharps/flats, use the diatonic position of the natural note below (floor)
+const S2D=[0,0,1,1,2,3,3,4,4,5,5,6];
+function diat(midi){const o=Math.floor(midi/12)-1;const d=S2D[midi%12];return o*7+d;}
 function staffPos(midi,clef){return diat(midi)-(clef==='treble'?diat(64):diat(43));}
 
 // All quiz note pools
 const TREBLE_NOTES=[];
 const BASS_NOTES=[];
-for(let m=55;m<=84;m++) if(isWhite(m)) TREBLE_NOTES.push({midi:m,clef:'treble',pos:staffPos(m,'treble')});
-for(let m=36;m<=62;m++) if(isWhite(m)) BASS_NOTES.push({midi:m,clef:'bass',pos:staffPos(m,'bass')});
+// C2-E6 range: treble C4-E6, bass C2-B3
+for(let m=60;m<=88;m++) if(isWhite(m)) TREBLE_NOTES.push({midi:m,clef:'treble',pos:staffPos(m,'treble'),acc:0});
+for(let m=36;m<=59;m++) if(isWhite(m)) BASS_NOTES.push({midi:m,clef:'bass',pos:staffPos(m,'bass'),acc:0});
+
 
 // Smart randomizer: tracks last N picks to avoid repeats
-const ANTI_REPEAT = 4; // won't repeat same note within last 4 picks
-let recentPicks = [];
+// Full 88-key pool for sequence mode (all notes including sharps)
+const SEQ_ALL_NOTES=[];
+for(let m=21;m<=108;m++){
+  const clef=m>=56?'treble':'bass';
+  const acc=[0,2,4,5,7,9,11].includes(m%12)?0:1;
+  SEQ_ALL_NOTES.push({midi:m,clef,pos:staffPos(m,clef),acc});
+}
 
-function pickNote(pool) {
-  // filter out recently seen
-  let available = pool.filter(n => !recentPicks.includes(n.midi+'_'+n.clef));
-  if(available.length === 0) available = pool; // fallback if pool tiny
-  const note = available[Math.floor(Math.random() * available.length)];
-  recentPicks.push(note.midi+'_'+note.clef);
-  if(recentPicks.length > ANTI_REPEAT) recentPicks.shift();
+// Sharps/flats pool for accidentals mode — C2-E6, each black key as BOTH sharp and flat
+// sharp: displayed on the lower natural note's line (acc=1)
+// flat:  displayed on the upper natural note's line (acc=-1), so pos uses midi+1
+const SEQ_ACCIDENTAL_NOTES=[];
+for(let m=36;m<=88;m++){
+  if(isWhite(m)) continue; // skip naturals
+  const clef=m>=60?'treble':'bass';
+  // Add as sharp (sits on lower note's line)
+  SEQ_ACCIDENTAL_NOTES.push({midi:m,clef,pos:staffPos(m,clef),acc:1});
+  // Add as flat (sits on upper note's line, same key different name)
+  SEQ_ACCIDENTAL_NOTES.push({midi:m,clef,pos:staffPos(m+1,clef),acc:-1});
+}
+
+// Shuffle-bag: cycles through ENTIRE pool before repeating any note
+const _bags={};
+let recentPicks=[];
+function shuffleArray(arr){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function pickNote(pool){
+  const key=pool.length+'_'+(pool[0]?pool[0].midi:'x');
+  if(!_bags[key]||_bags[key].length===0){
+    let s=shuffleArray(pool);
+    if(_bags[key+'_last']!==undefined&&s.length>1&&s[0].midi===_bags[key+'_last']){const j=1+Math.floor(Math.random()*(s.length-1));[s[0],s[j]]=[s[j],s[0]];}
+    _bags[key]=s;
+  }
+  const note=_bags[key].pop();
+  _bags[key+'_last']=note.midi;
   return note;
 }
 
@@ -526,17 +559,18 @@ function drawStaff(note){
 
   let H, tTop, bTop;
   if(showBoth){
-    tTop = 40;
-    bTop = tTop + 4*gap + 28;
-    H = bTop + 4*gap + 35;
+    tTop = 55;
+    bTop = tTop + 4*gap + 35;
+    H = bTop + 4*gap + 50;
   } else {
-    tTop = 40;
-    H = tTop + 4*gap + 35;
+    tTop = 55;
+    H = tTop + 4*gap + 50;
   }
 
   svgEl.setAttribute('width',W);
   svgEl.setAttribute('height',H);
   svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svgEl.style.overflow='visible';
   svgEl.innerHTML='';
 
   function drawStaffLines(top){
@@ -609,10 +643,43 @@ function makeMiniStaff(note){
   return svg;
 }
 
+// ── Draw accidental symbol (sharp or flat) ──────────────
+function drawAccidental(svgEl, noteX, noteY, gap, fill, acc){
+  if(acc===1){
+    // Sharp: 2 vertical lines + 2 horizontal bars
+    const sx=noteX-18, sh=gap*1.4, sw=gap*0.85, barH=gap*0.5;
+    svgLine(svgEl,sx,     noteY-sh,sx,     noteY+sh,fill,1.8);
+    svgLine(svgEl,sx+sw,  noteY-sh,sx+sw,  noteY+sh,fill,1.8);
+    svgLine(svgEl,sx-3,noteY-barH+2,sx+sw+3,noteY-barH-2,fill,2.2);
+    svgLine(svgEl,sx-3,noteY+barH+2,sx+sw+3,noteY+barH-2,fill,2.2);
+  } else if(acc===-1){
+    // Flat: vertical line down + curved belly
+    const sx=noteX-14;
+    const topY=noteY-gap*1.8;
+    const midY=noteY+gap*0.3;
+    const botY=noteY+gap*0.8;
+    // Vertical stroke
+    svgLine(svgEl,sx,topY,sx,botY+gap*0.3,fill,1.8);
+    // Belly curve using a path
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    const ex=sx+gap*0.9;
+    path.setAttribute('d',
+      `M ${sx} ${midY} C ${ex} ${midY-gap*0.6}, ${ex} ${botY+gap*0.2}, ${sx} ${botY}`
+    );
+    path.setAttribute('stroke',fill);
+    path.setAttribute('stroke-width','1.8');
+    path.setAttribute('fill','none');
+    svgEl.appendChild(path);
+  }
+}
+// Keep old name as alias
+function drawSharp(svgEl,noteX,noteY,gap,fill){drawAccidental(svgEl,noteX,noteY,gap,fill,1);}
+
 // ── Shared note placement ───────────────────────────────
 function placeNote(svgEl,note,sTop,noteX,gap,rx,ry,showLabel){
   function lineY(i){return sTop+(4-i)*gap;}
   const botY=lineY(0); // y of bottom staff line (pos=0)
+  // For sharps/flats, use the diatonic position of the natural note below
   const noteY=botY-note.pos*(gap/2);
 
   // Ledger lines sit on even staff positions (lines, not spaces)
@@ -635,6 +702,9 @@ function placeNote(svgEl,note,sTop,noteX,gap,rx,ry,showLabel){
       svgLine(svgEl,noteX-rx-5,ly,noteX+rx+5,ly,'#c8a96e',1);
     }
   }
+
+  // Draw accidental sign if needed
+  if(note.acc) drawAccidental(svgEl, noteX, noteY, gap, '#e8c87a', note.acc);
 
   const el=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
   el.setAttribute('cx',String(noteX));el.setAttribute('cy',String(noteY));
@@ -667,12 +737,14 @@ function drawSequenceStaff() {
   const panel = document.getElementById('staff-panel');
   const W = Math.min(panel.clientWidth - 20, 700);
   const gap = 9;
-  const tTop = 38, bTop = 118;
-  const H = bTop + 4*gap + 40;
+  const tTop = 55;  // more room above for ledger lines + sharps
+  const bTop = 140;
+  const H = bTop + 4*gap + 55; // more room below for ledger lines
 
   svgEl.setAttribute('width', W);
   svgEl.setAttribute('height', H);
   svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svgEl.style.overflow = 'visible'; // allow drawing outside bounds
   svgEl.innerHTML = '';
 
   // Draw both staves
@@ -719,6 +791,10 @@ function drawSequenceStaff() {
 
     // Note color: green=done, gold=current, grey=upcoming
     const fill = i < seqIndex ? '#6fcf97' : (i === seqIndex ? '#c8a96e' : '#3a3a3a');
+
+    // Draw accidental sign if needed
+    if(note.acc) drawAccidental(svgEl, noteX, noteY, gap, fill, note.acc);
+
     const el = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
     el.setAttribute('cx', String(noteX));
     el.setAttribute('cy', String(noteY));
@@ -750,8 +826,8 @@ function startTimer(){
     timerBar.style.width='0%';
   }));
   timerId=setTimeout(()=>{
-    if(currentMode==='sequence'){
-      // in sequence mode, just reset on timeout
+    if(currentMode==='sequence'||currentMode==='accidental'){
+      // in sequence/accidental mode, reset on timeout
       streak=0;
       seqIndex=0;
       document.getElementById('streak-val').textContent=streak;
@@ -887,11 +963,14 @@ let seqBest = 0;        // best streak in this session
 function buildSequence() {
   seqNotes = [];
   recentPicks = [];
-  // Strict 50/50 treble/bass mix, same as both-clefs mode
   for (let i = 0; i < SEQ_LEN; i++) {
-    const clef = i % 2 === 0 ? 'treble' : 'bass';
-    const pool = clef === 'treble' ? TREBLE_NOTES : BASS_NOTES;
-    seqNotes.push(pickNote(pool));
+    if(currentMode==='accidental'){
+      seqNotes.push(pickNote(SEQ_ACCIDENTAL_NOTES));
+    } else {
+      const clef = i % 2 === 0 ? 'treble' : 'bass';
+      const pool = clef === 'treble' ? TREBLE_NOTES : BASS_NOTES;
+      seqNotes.push(pickNote(pool));
+    }
   }
   seqIndex = 0;
 }
@@ -984,6 +1063,8 @@ function seqHandleKey(midi) {
 function startGame(mode){
   currentMode=mode;
   recentPicks=[];
+  // Reset shuffle bags for fresh randomization
+  Object.keys(_bags).forEach(k => delete _bags[k]);
   score=0;streak=0;
   document.getElementById('score-val').textContent='0';
   document.getElementById('streak-val').textContent='0';
@@ -994,14 +1075,15 @@ function startGame(mode){
   if(mode==='both'){badge.textContent='BOTH CLEFS';badge.classList.add('both');}
   else if(mode==='treble'){badge.textContent='TREBLE';badge.classList.add('treble');}
   else if(mode==='bass'){badge.textContent='BASS';badge.classList.add('bass');}
-  else{badge.textContent='SEQUENCE';badge.classList.add('sequence');}
+  else if(mode==='sequence'){badge.textContent='SEQUENCE';badge.classList.add('sequence');}
+  else{badge.textContent='ACCIDENTALS';badge.classList.add('accidental');}
 
   document.getElementById('start-screen').style.display='none';
   document.getElementById('game-screen').style.display='flex';
   buildPiano();
   renderHistory();
 
-  if(mode==='sequence'){
+  if(mode==='sequence'||mode==='accidental'){
     document.getElementById('seq-strip').classList.add('active');
     seqBest=0; seqIndex=0;
     buildSequence();
@@ -1018,6 +1100,7 @@ document.getElementById('btn-both').addEventListener('click',()=>startGame('both
 document.getElementById('btn-treble').addEventListener('click',()=>startGame('treble'));
 document.getElementById('btn-bass').addEventListener('click',()=>startGame('bass'));
 document.getElementById('btn-sequence').addEventListener('click',()=>startGame('sequence'));
+document.getElementById('btn-accidental').addEventListener('click',()=>startGame('accidental'));
 
 document.getElementById('speed-slider').addEventListener('input',function(){
   document.getElementById('speed-label').textContent=this.value+'s';
