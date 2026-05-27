@@ -210,6 +210,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   background: #1a1a1a; border: 0.5px solid #000;
   border-radius: 0 0 3px 3px; cursor: pointer; position: absolute;
   top: 0; z-index: 2; transition: background 0.07s;
+  height: 50px !important;
 }
 .bk:hover { background: #2e2e2e; }
 .bk.zone-both { background: #3a3835; }
@@ -270,9 +271,10 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <h1>Piano Sheet Reader</h1>
   <p>Choose a practice mode below.</p>
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
-    v6.3 &nbsp;·&nbsp; 2026-05-27<br>
+    v6.4 &nbsp;·&nbsp; 2026-05-27<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v6.3 &nbsp;keys slider extends to 200px, black keys capped</span><br>
+    <span style="color:#c8a96e;">v6.4 &nbsp;black keys fixed height, never scale with slider</span><br>
+    <span style="color:#c8a96e;">v6.3 &nbsp;keys slider extends to 200px</span><br>
     <span style="color:#c8a96e;">v6.2 &nbsp;staff stays centered when scaling</span><br>
     <span style="color:#c8a96e;">v6.1 &nbsp;staff slider: scales content AND reflows layout</span><br>
     <span style="color:#c8a96e;">v5.9 &nbsp;keys slider capped, accidentals C2-E6</span><br>
@@ -513,7 +515,8 @@ function buildPiano(){
     const k=document.createElement('div');
     k.className='bk'; k.dataset.midi=m;
     k.style.left=(lx+ww+1-Math.floor(bw/2)-1)+'px';
-    k.style.width=bw+'px'; k.style.height=bh+'px';
+    k.style.width=bw+'px';
+    // black key height set by CSS only, never inline
     applyKeyZone(k, m, true);
     k.addEventListener('mousedown',e=>{e.preventDefault();handleKey(m);});
     k.addEventListener('touchstart',e=>{e.preventDefault();handleKey(m);},{passive:false});
@@ -1190,7 +1193,7 @@ document.getElementById('keys-size-slider').addEventListener('input', function()
   area.style.minHeight = (h + 20)+'px';
   area.style.maxHeight = (h + 20)+'px';
   document.querySelectorAll('.wk').forEach(k => k.style.height = h+'px');
-  document.querySelectorAll('.bk').forEach(k => k.style.height = bh+'px');
+  // Black keys never change height — stay at their CSS-defined size
 });
 
 
