@@ -270,8 +270,9 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <h1>Piano Sheet Reader</h1>
   <p>Choose a practice mode below.</p>
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
-    v5.9 &nbsp;·&nbsp; 2026-05-27<br>
+    v6.0 &nbsp;·&nbsp; 2026-05-27<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
+    <span style="color:#c8a96e;">v6.0 &nbsp;staff slider now reflows layout, piano follows</span><br>
     <span style="color:#c8a96e;">v5.9 &nbsp;keys slider capped, accidentals C2-E6</span><br>
     <span style="color:#c8a96e;">v5.8 &nbsp;staff always centered between HUD and piano</span><br>
     <span style="color:#c8a96e;">v5.7 &nbsp;menu scrollable</span><br>
@@ -1157,16 +1158,18 @@ window.addEventListener('resize',()=>{
   if((currentMode==='sequence'||currentMode==='accidental') && seqNotes.length) drawSequenceStaff();
 });
 
-// Staff slider — scales the SVG from top-left so it shrinks upward, freeing space for piano
+// Staff slider — directly sets SVG width/height so layout reflows naturally
 document.getElementById('staff-size-slider').addEventListener('input', function(){
-  const scale = 0.3 + (parseInt(this.value) - 80) / (300 - 80) * 0.9; // 0.3 to 1.2
-  const svgEl = document.getElementById('staff-svg');
-  if(!svgEl) return;
-  svgEl.style.transform = `scale(${scale})`;
-  svgEl.style.transformOrigin = 'top center';
-  // Shrink the staff panel to match so piano gets the freed space
-  const svgH = svgEl.getBoundingClientRect().height || 200;
-  document.getElementById('main').style.height = (svgH * scale + 20) + 'px';
+  const val = parseInt(this.value); // 80-300
+  // Map to a height for the #main panel: 80px to 300px
+  const mainH = val;
+  const main = document.getElementById('main');
+  main.style.height = mainH + 'px';
+  main.style.maxHeight = mainH + 'px';
+  main.style.minHeight = mainH + 'px';
+  // Redraw staff to fit the new height
+  if(currentNote) drawStaff(currentNote);
+  if((currentMode==='sequence'||currentMode==='accidental') && seqNotes.length) drawSequenceStaff();
 });
 
 // Piano key height slider (mobile landscape only)
