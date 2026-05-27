@@ -270,14 +270,36 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <h1>Piano Sheet Reader</h1>
   <p>Choose a practice mode below.</p>
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
-    v1.5 &nbsp;·&nbsp; 2026-05-25<br>
+    v5.9 &nbsp;·&nbsp; 2026-05-27<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
-    <span style="color:#c8a96e;">v4.6 &nbsp;shuffle-bag randomizer: full pool before any repeats</span><br>
-    <span style="color:#555;">v1.5 &nbsp;mobile: portrait rotate prompt + touch</span><br>
-    <span style="color:#444;">v1.4 &nbsp;mobile rotation attempt (broken)</span><br>
-    <span style="color:#3a3a3a;">v1.3 &nbsp;ledger line notes (3 above/below)</span><br>
-    <span style="color:#333;">v1.2 &nbsp;treble/bass/both modes + key zones</span><br>
-    <span style="color:#2e2e2e;">v1.1 &nbsp;missed note history + 88 keys</span><br>
+    <span style="color:#c8a96e;">v5.9 &nbsp;keys slider capped, accidentals C2-E6</span><br>
+    <span style="color:#c8a96e;">v5.8 &nbsp;staff always centered between HUD and piano</span><br>
+    <span style="color:#c8a96e;">v5.7 &nbsp;menu scrollable</span><br>
+    <span style="color:#c8a96e;">v5.6 &nbsp;mobile sliders: staff scales, keys resize properly</span><br>
+    <span style="color:#c8a96e;">v5.5 &nbsp;fix accidentals mode clicks not working</span><br>
+    <span style="color:#c8a96e;">v5.4 &nbsp;mobile staff slider scales SVG uniformly</span><br>
+    <span style="color:#c8a96e;">v5.3 &nbsp;flats added to accidentals mode with proper symbol</span><br>
+    <span style="color:#c8a96e;">v5.2 &nbsp;accidentals clamped to C2-E6, timer null fix</span><br>
+    <span style="color:#c8a96e;">v5.1 &nbsp;fix sharp clipping, more staff padding</span><br>
+    <span style="color:#c8a96e;">v5.0 &nbsp;note range C2-E6</span><br>
+    <span style="color:#888;">v4.9 &nbsp;note range C2-B6</span><br>
+    <span style="color:#888;">v4.8 &nbsp;note range C2-C5</span><br>
+    <span style="color:#888;">v4.7 &nbsp;expanded to full 52 natural notes</span><br>
+    <span style="color:#888;">v4.6 &nbsp;shuffle-bag randomizer: full pool before repeats</span><br>
+    <span style="color:#888;">v4.5 &nbsp;accidentals mode added (sharps/flats sequence)</span><br>
+    <span style="color:#888;">v4.4 &nbsp;sharp symbol looks like real sheet music</span><br>
+    <span style="color:#888;">v4.0 &nbsp;sharps/flats added to all modes</span><br>
+    <span style="color:#555;">v3.8 &nbsp;88 keys fit full screen width</span><br>
+    <span style="color:#555;">v3.7 &nbsp;A0-C8 range, fix double-tap bug</span><br>
+    <span style="color:#555;">v3.1 &nbsp;mobile 60vh layout</span><br>
+    <span style="color:#444;">v3.0 &nbsp;mobile landscape hard split</span><br>
+    <span style="color:#444;">v2.8 &nbsp;removed staff highlight, grey zones</span><br>
+    <span style="color:#444;">v2.6 &nbsp;sequence: all 10 notes visible at once</span><br>
+    <span style="color:#444;">v2.4 &nbsp;sequence mode added</span><br>
+    <span style="color:#333;">v2.2 &nbsp;shifted piano window to B1-D9</span><br>
+    <span style="color:#333;">v2.0 &nbsp;shifted piano window C1-E8</span><br>
+    <span style="color:#2e2e2e;">v1.2 &nbsp;treble/bass/both modes + key zones</span><br>
+    <span style="color:#2a2a2e;">v1.1 &nbsp;missed note history + 88 keys</span><br>
     <span style="color:#292929;">v1.0 &nbsp;initial release</span>
   </div>
   <div class="mode-cards">
@@ -354,7 +376,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
     <input type="range" id="staff-size-slider" min="80" max="300" value="180" step="5">
     <div class="rb-sep"></div>
     <span class="rb-label">🎹 keys</span>
-    <input type="range" id="keys-size-slider" min="40" max="160" value="80" step="5">
+    <input type="range" id="keys-size-slider" min="30" max="80" value="55" step="5">
   </div>
   <div id="piano-area">
     <div id="piano-label" style="height:14px"></div>
