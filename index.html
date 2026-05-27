@@ -270,8 +270,9 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
   <h1>Piano Sheet Reader</h1>
   <p>Choose a practice mode below.</p>
   <div style="font-size:10px;color:#333;letter-spacing:0.08em;margin-top:-10px;">
-    v6.2 &nbsp;·&nbsp; 2026-05-27<br>
+    v6.3 &nbsp;·&nbsp; 2026-05-27<br>
     <span style="color:#2a2a2e;">───────────────────</span><br>
+    <span style="color:#c8a96e;">v6.3 &nbsp;keys slider extends to 200px, black keys capped</span><br>
     <span style="color:#c8a96e;">v6.2 &nbsp;staff stays centered when scaling</span><br>
     <span style="color:#c8a96e;">v6.1 &nbsp;staff slider: scales content AND reflows layout</span><br>
     <span style="color:#c8a96e;">v5.9 &nbsp;keys slider capped, accidentals C2-E6</span><br>
@@ -378,7 +379,7 @@ body { display: flex; flex-direction: column; font-family: 'Courier New', monosp
     <input type="range" id="staff-size-slider" min="80" max="300" value="180" step="5">
     <div class="rb-sep"></div>
     <span class="rb-label">🎹 keys</span>
-    <input type="range" id="keys-size-slider" min="30" max="80" value="55" step="5">
+    <input type="range" id="keys-size-slider" min="30" max="200" value="55" step="5">
   </div>
   <div id="piano-area">
     <div id="piano-label" style="height:14px"></div>
@@ -1181,16 +1182,15 @@ document.getElementById('staff-size-slider').addEventListener('input', function(
 // Piano key height slider (mobile landscape only)
 document.getElementById('keys-size-slider').addEventListener('input', function(){
   const h = parseInt(this.value);
-  const bh = Math.floor(h * 0.62);
+  const bh = Math.min(Math.floor(h * 0.62), 80); // black keys never exceed 80px tall
   const inner = document.getElementById('piano-inner');
   const area = document.getElementById('piano-area');
   inner.style.height = h+'px';
   area.style.height = (h + 20)+'px';
   area.style.minHeight = (h + 20)+'px';
   area.style.maxHeight = (h + 20)+'px';
-  // Update key heights inline
-  document.querySelectorAll('.wk').forEach(k => { k.style.height = h+'px'; });
-  document.querySelectorAll('.bk').forEach(k => { k.style.height = bh+'px'; });
+  document.querySelectorAll('.wk').forEach(k => k.style.height = h+'px');
+  document.querySelectorAll('.bk').forEach(k => k.style.height = bh+'px');
 });
 
 
