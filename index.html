@@ -495,7 +495,7 @@ function buildPiano(){
 
 function applyKeyZone(el, m, isBlack){
   el.classList.remove('zone-both','zone-treble','zone-bass','zone-c3','zone-c4');
-  if(currentMode==='both' || currentMode==='sequence'){
+  if(currentMode==='both' || currentMode==='sequence' || currentMode==='accidental'){
     // grey out C3(48)-B3(59) and C4(60)-B4(71)
     if(m>=48&&m<=71) el.classList.add('zone-both');
   } else if(currentMode==='treble'){
@@ -919,7 +919,7 @@ function handleKey(midi){
   if(_keyLock) return;
   _keyLock = true;
   setTimeout(()=>{ _keyLock = false; }, 300);
-  if(currentMode==='sequence'){ seqHandleKey(midi); return; }
+  if(currentMode==='sequence'||currentMode==='accidental'){ seqHandleKey(midi); return; }
   if(!currentNote) return;
   if(waitingForForced){
     if(midi===currentNote.midi){
@@ -1127,17 +1127,19 @@ document.getElementById('clear-hist').addEventListener('click',()=>{
 window.addEventListener('resize',()=>{
   buildPiano();
   if(currentNote) drawStaff(currentNote);
-  if(currentMode==='sequence' && seqNotes.length) drawSequenceStaff();
+  if((currentMode==='sequence'||currentMode==='accidental') && seqNotes.length) drawSequenceStaff();
 });
 
-// Staff height slider (mobile landscape only)
+// Staff height slider — rescales by adjusting the SVG viewBox scale
+let staffScale = 1.0;
 document.getElementById('staff-size-slider').addEventListener('input', function(){
-  const h = parseInt(this.value);
-  document.getElementById('main').style.height = h+'px';
-  document.getElementById('main').style.maxHeight = h+'px';
-  document.getElementById('main').style.minHeight = h+'px';
-  if(currentNote) drawStaff(currentNote);
-  if(currentMode==='sequence' && seqNotes.length) drawSequenceStaff();
+  // Map slider 80-300 to scale 0.4-1.5
+  staffScale = 0.4 + (parseInt(this.value) - 80) / (300 - 80) * 1.1;
+  const svgEl = document.getElementById('staff-svg');
+  if(svgEl){
+    svgEl.style.transform = `scale(${staffScale})`;
+    svgEl.style.transformOrigin = 'center center';
+  }
 });
 
 // Piano key height slider (mobile landscape only)
